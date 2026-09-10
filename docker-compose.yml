@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # 1. Container Aplikasi (PHP + Node)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: laravel-inertia-app
+    container_name: laravel_app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+    volumes:
+      - .:/var/www
+    ports:
+      - "5173:5173" # Port untuk Vite Dev Server (React)
+    networks:
+      - laravel-network
+
+  # 2. Container Web Server (Nginx)
+  webserver:
+    image: nginx:alpine
+    container_name: laravel_webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:80" # Anda akan mengakses aplikasi via http://localhost:8000
+    volumes:
+      - .:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - laravel-network
+    depends_on:
+      - app
+
+  # 3. Container Database (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: laravel_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "33061:3306" # Menggunakan port 33061 agar tidak bentrok dengan MySQL lokal Windows
+    environment:
+      MYSQL_DATABASE: pengajuan_cuti
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: laravel_user
+      MYSQL_PASSWORD: laravel_password
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
