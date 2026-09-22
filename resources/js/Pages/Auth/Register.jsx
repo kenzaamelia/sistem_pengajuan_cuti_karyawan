@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Recaptcha from '@/Components/Recaptcha';
 import TextInput from '@/Components/TextInput';
+import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useRef } from 'react';
 
-export default function Register({ roles, departemens }) {
+const SELECT_CLASS =
+    'mt-1.5 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500';
+
+export default function Register({ roles, departemens, recaptchaSiteKey }) {
+    const captchaRef = useRef(null);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -16,6 +22,7 @@ export default function Register({ roles, departemens }) {
         jabatan: '',
         departemen_id: '',
         tanggal_masuk_kerja: '',
+        'g-recaptcha-response': '',
     });
 
     const roleTerpilih = roles.find((r) => String(r.id) === String(data.role_id));
@@ -40,22 +47,28 @@ export default function Register({ roles, departemens }) {
         e.preventDefault();
 
         post(route('register'), {
+            onError: () => captchaRef.current?.reset(),
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout maxWidthClass="max-w-xl">
             <Head title="Registrasi" />
 
-            <form onSubmit={submit}>
+            <div className="mb-6">
+                <h2 className="font-display text-xl font-bold text-slate-900">Buat akun baru</h2>
+                <p className="mt-1 text-sm text-slate-500">Lengkapi data di bawah untuk mulai memakai CutiKu.</p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
                 <div>
                     <InputLabel htmlFor="name" value="Nama Lengkap" />
                     <TextInput
                         id="name"
                         name="name"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        className="mt-1.5 block w-full"
                         autoComplete="name"
                         isFocused={true}
                         onChange={(e) => setData('name', e.target.value)}
@@ -64,14 +77,14 @@ export default function Register({ roles, departemens }) {
                     <InputError message={errors.name} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
+                <div>
                     <InputLabel htmlFor="email" value="Email" />
                     <TextInput
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="mt-1.5 block w-full"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -79,14 +92,14 @@ export default function Register({ roles, departemens }) {
                     <InputError message={errors.email} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
+                <div>
                     <InputLabel htmlFor="role_id" value="Role" />
                     <select
                         id="role_id"
                         name="role_id"
                         value={data.role_id}
                         onChange={handleRoleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className={SELECT_CLASS}
                         required
                     >
                         <option value="">-- Pilih Role --</option>
@@ -99,103 +112,116 @@ export default function Register({ roles, departemens }) {
                     <InputError message={errors.role_id} className="mt-2" />
                 </div>
 
-                {isKaryawanPimpinan && (
-                    <div className="mt-4">
-                        <InputLabel htmlFor="jabatan" value="Jabatan" />
-                        <select
-                            id="jabatan"
-                            name="jabatan"
-                            value={data.jabatan}
-                            onChange={(e) => setData('jabatan', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                        >
-                            <option value="">-- Pilih Jabatan --</option>
-                            <option value="asisten_manajer">Asisten Manajer</option>
-                            <option value="manajer">Manajer</option>
-                        </select>
-                        <InputError message={errors.jabatan} className="mt-2" />
+                {(isKaryawanPimpinan || butuhDepartemen) && (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {isKaryawanPimpinan && (
+                            <div>
+                                <InputLabel htmlFor="jabatan" value="Jabatan" />
+                                <select
+                                    id="jabatan"
+                                    name="jabatan"
+                                    value={data.jabatan}
+                                    onChange={(e) => setData('jabatan', e.target.value)}
+                                    className={SELECT_CLASS}
+                                    required
+                                >
+                                    <option value="">-- Pilih Jabatan --</option>
+                                    <option value="asisten_manajer">Asisten Manajer</option>
+                                    <option value="manajer">Manajer</option>
+                                </select>
+                                <InputError message={errors.jabatan} className="mt-2" />
+                            </div>
+                        )}
+
+                        {butuhDepartemen && (
+                            <div className={isKaryawanPimpinan ? '' : 'sm:col-span-2'}>
+                                <InputLabel htmlFor="departemen_id" value="Departemen" />
+                                <select
+                                    id="departemen_id"
+                                    name="departemen_id"
+                                    value={data.departemen_id}
+                                    onChange={(e) => setData('departemen_id', e.target.value)}
+                                    className={SELECT_CLASS}
+                                    required
+                                >
+                                    <option value="">-- Pilih Departemen --</option>
+                                    {departemens.map((dept) => (
+                                        <option key={dept.id} value={dept.id}>
+                                            {dept.nama_departemen}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.departemen_id} className="mt-2" />
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {butuhDepartemen && (
-                    <div className="mt-4">
-                        <InputLabel htmlFor="departemen_id" value="Departemen" />
-                        <select
-                            id="departemen_id"
-                            name="departemen_id"
-                            value={data.departemen_id}
-                            onChange={(e) => setData('departemen_id', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                        >
-                            <option value="">-- Pilih Departemen --</option>
-                            {departemens.map((dept) => (
-                                <option key={dept.id} value={dept.id}>
-                                    {dept.nama_departemen}
-                                </option>
-                            ))}
-                        </select>
-                        <InputError message={errors.departemen_id} className="mt-2" />
-                    </div>
-                )}
-
-                <div className="mt-4">
+                <div>
                     <InputLabel htmlFor="tanggal_masuk_kerja" value="Tanggal Masuk Kerja" />
                     <TextInput
                         id="tanggal_masuk_kerja"
                         type="date"
                         name="tanggal_masuk_kerja"
                         value={data.tanggal_masuk_kerja}
-                        className="mt-1 block w-full"
+                        className="mt-1.5 block w-full"
                         onChange={(e) => setData('tanggal_masuk_kerja', e.target.value)}
                         required
                     />
                     <InputError message={errors.tanggal_masuk_kerja} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
-                    <InputError message={errors.password} className="mt-2" />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <InputLabel htmlFor="password" value="Password" />
+                        <TextInput
+                            id="password"
+                            type="password"
+                            name="password"
+                            value={data.password}
+                            className="mt-1.5 block w-full"
+                            autoComplete="new-password"
+                            onChange={(e) => setData('password', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.password} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="password_confirmation" value="Konfirmasi Password" />
+                        <TextInput
+                            id="password_confirmation"
+                            type="password"
+                            name="password_confirmation"
+                            value={data.password_confirmation}
+                            className="mt-1.5 block w-full"
+                            autoComplete="new-password"
+                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.password_confirmation} className="mt-2" />
+                    </div>
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password_confirmation" value="Konfirmasi Password" />
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData('password_confirmation', e.target.value)}
-                        required
+                <div>
+                    <Recaptcha
+                        ref={captchaRef}
+                        siteKey={recaptchaSiteKey}
+                        onChange={(token) => setData('g-recaptcha-response', token)}
                     />
-                    <InputError message={errors.password_confirmation} className="mt-2" />
+                    <InputError message={errors['g-recaptcha-response']} className="mt-2" />
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Sudah punya akun?
+                <PrimaryButton className="w-full" disabled={processing}>
+                    Daftar
+                </PrimaryButton>
+
+                <p className="text-center text-sm text-slate-500">
+                    Sudah punya akun?{' '}
+                    <Link href={route('login')} className="font-semibold text-brand-600 hover:text-brand-700">
+                        Masuk di sini
                     </Link>
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Daftar
-                    </PrimaryButton>
-                </div>
+                </p>
             </form>
         </GuestLayout>
     );

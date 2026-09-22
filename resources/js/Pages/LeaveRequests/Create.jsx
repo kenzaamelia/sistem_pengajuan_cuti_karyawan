@@ -1,8 +1,9 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { labelJenisCuti } from '@/Utils/leaveType';
 import { Head, useForm } from '@inertiajs/react';
 
 export default function Create({ leaveTypes }) {
@@ -24,17 +25,21 @@ export default function Create({ leaveTypes }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Ajukan Cuti</h2>}
+            header={
+                <h2 className="truncate font-display text-lg font-bold text-slate-900">
+                    Ajukan Cuti
+                </h2>
+            }
         >
             <Head title="Ajukan Cuti" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <form onSubmit={submit} className="space-y-4 p-6">
+            <div className="py-6 sm:py-8">
+                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <form onSubmit={submit} className="space-y-5 p-5 sm:p-6">
 
                             {errors.jumlah_hari && (
-                                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                                <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
                                     {errors.jumlah_hari}
                                 </div>
                             )}
@@ -45,27 +50,27 @@ export default function Create({ leaveTypes }) {
                                     id="leave_type_id"
                                     value={data.leave_type_id}
                                     onChange={(e) => setData('leave_type_id', e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    className="mt-1.5 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     required
                                 >
                                     <option value="">-- Pilih Jenis Cuti --</option>
                                     {leaveTypes.map((type) => (
                                         <option key={type.id} value={type.id}>
-                                            {formatNamaCuti(type.nama_cuti)}
+                                            {labelJenisCuti(type.nama_cuti)}
                                         </option>
                                     ))}
                                 </select>
                                 <InputError message={errors.leave_type_id} className="mt-2" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <InputLabel htmlFor="tanggal_mulai" value="Tanggal Mulai" />
                                     <TextInput
                                         id="tanggal_mulai"
                                         type="date"
                                         value={data.tanggal_mulai}
-                                        className="mt-1 block w-full"
+                                        className="mt-1.5 block w-full"
                                         onChange={(e) => setData('tanggal_mulai', e.target.value)}
                                         required
                                     />
@@ -78,7 +83,7 @@ export default function Create({ leaveTypes }) {
                                         id="tanggal_selesai"
                                         type="date"
                                         value={data.tanggal_selesai}
-                                        className="mt-1 block w-full"
+                                        className="mt-1.5 block w-full"
                                         onChange={(e) => setData('tanggal_selesai', e.target.value)}
                                         required
                                     />
@@ -93,7 +98,7 @@ export default function Create({ leaveTypes }) {
                                     value={data.alasan}
                                     onChange={(e) => setData('alasan', e.target.value)}
                                     rows={3}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    className="mt-1.5 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                 />
                                 <InputError message={errors.alasan} className="mt-2" />
                             </div>
@@ -105,15 +110,15 @@ export default function Create({ leaveTypes }) {
                                     type="file"
                                     accept=".jpg,.jpeg,.png,.pdf"
                                     onChange={(e) => setData('bukti_cuti', e.target.files[0] ?? null)}
-                                    className="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                                    className="mt-1.5 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-blue-100"
                                 />
-                                <p className="mt-1 text-xs text-gray-500">
+                                <p className="mt-1 text-xs text-slate-500">
                                     Format jpg, png, atau pdf. Maksimal 2MB.
                                 </p>
                                 <InputError message={errors.bukti_cuti} className="mt-2" />
                             </div>
 
-                            <div className="flex justify-end pt-2">
+                            <div className="flex justify-end border-t border-slate-100 pt-4">
                                 <PrimaryButton disabled={processing}>Kirim Pengajuan</PrimaryButton>
                             </div>
                         </form>
@@ -122,13 +127,4 @@ export default function Create({ leaveTypes }) {
             </div>
         </AuthenticatedLayout>
     );
-}
-
-function formatNamaCuti(namaCuti) {
-    const label = {
-        cuti_tahunan: 'Cuti Tahunan',
-        cuti_panjang: 'Cuti Panjang',
-    };
-
-    return label[namaCuti] ?? namaCuti;
 }

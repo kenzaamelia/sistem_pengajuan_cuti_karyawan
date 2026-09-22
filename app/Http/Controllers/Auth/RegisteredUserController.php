@@ -28,6 +28,7 @@ class RegisteredUserController extends Controller
         return Inertia::render('Auth/Register', [
             'roles' => Role::all(['id', 'nama_role']),
             'departemens' => Departemen::all(['id', 'nama_departemen']),
+            'recaptchaSiteKey' => config('captcha.sitekey'),
         ]);
     }
 
@@ -42,6 +43,8 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            // Wajib lolos captcha Google reCAPTCHA — mencegah bot mendaftar akun massal.
+            'g-recaptcha-response' => ['required', 'captcha'],
 
             'role_id' => ['required', 'exists:roles,id'],
 

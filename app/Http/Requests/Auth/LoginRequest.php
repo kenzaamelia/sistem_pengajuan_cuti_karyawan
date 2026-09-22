@@ -26,6 +26,9 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            // Wajib diverifikasi lolos captcha Google reCAPTCHA sebelum mencoba
+            // autentikasi sama sekali — mencegah bot brute-force percobaan login.
+            'g-recaptcha-response' => ['required', 'captcha'],
         ];
     }
 

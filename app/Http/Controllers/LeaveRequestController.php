@@ -108,10 +108,12 @@ class LeaveRequestController extends Controller
     {
         $this->authorizeView($leaveRequest);
 
-        $leaveRequest->load(['leaveType', 'approvals.approver']);
+        $leaveRequest->load(['user.departemen', 'user.role', 'leaveType', 'approvals.approver', 'dibatalkanOleh']);
 
         return Inertia::render('LeaveRequests/Show', [
             'leaveRequest' => $leaveRequest,
+            // SDM boleh edit/batalkan langsung dari halaman detail
+            'canManageAsSdm' => Auth::user()->isSdm() && $leaveRequest->bisaDikelolaSdm(),
         ]);
     }
 
@@ -143,6 +145,11 @@ class LeaveRequestController extends Controller
         $user = Auth::user();
 
         if ($leaveRequest->user_id === $user->id) {
+            return;
+        }
+
+        // SDM sebagai admin sistem boleh melihat seluruh pengajuan cuti
+        if ($user->isSdm()) {
             return;
         }
 

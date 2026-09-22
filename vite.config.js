@@ -10,6 +10,11 @@ export default defineConfig({
         }),
         react(),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
     // TAMBAHKAN BLOK PENGATURAN DOCKER DI BAWAH INI
     server: {
         host: '0.0.0.0', // Mengizinkan Vite diakses dari luar container Docker

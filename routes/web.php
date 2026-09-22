@@ -4,6 +4,8 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\CutiBersamaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeaveMonitoringController;
+use App\Http\Controllers\LeaveReportController;
+use App\Http\Controllers\LeaveRequestAdminController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +50,22 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:sdm')
         ->prefix('monitoring-cuti')->name('monitoring.')->group(function () {
             Route::get('/', [LeaveMonitoringController::class, 'index'])->name('index');
+        });
+
+    // Edit & batalkan cuti karyawan oleh SDM
+    Route::middleware('role:sdm')
+        ->prefix('sdm/leave-requests')->name('sdm.leave-requests.')->group(function () {
+            Route::get('/{leaveRequest}/edit', [LeaveRequestAdminController::class, 'edit'])->name('edit');
+            Route::put('/{leaveRequest}', [LeaveRequestAdminController::class, 'update'])->name('update');
+            Route::post('/{leaveRequest}/cancel', [LeaveRequestAdminController::class, 'cancel'])->name('cancel');
+        });
+
+    // Laporan bulanan cuti (rekap per departemen & jenis cuti), khusus SDM
+    Route::middleware('role:sdm')
+        ->prefix('laporan-bulanan')->name('laporan.')->group(function () {
+            Route::get('/', [LeaveReportController::class, 'index'])->name('index');
+            Route::get('/export/excel', [LeaveReportController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf', [LeaveReportController::class, 'exportPdf'])->name('export.pdf');
         });
 });
 

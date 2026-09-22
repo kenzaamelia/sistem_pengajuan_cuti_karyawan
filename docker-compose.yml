@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. Container Aplikasi (PHP + Node)
   app:
@@ -10,6 +8,7 @@ services:
     container_name: laravel_app
     restart: unless-stopped
     tty: true
+    working_dir: /var/www
     environment:
       SERVICE_NAME: app
     volumes:
@@ -18,6 +17,20 @@ services:
       - "5173:5173" # Port untuk Vite Dev Server (React)
     networks:
       - laravel-network
+    depends_on:
+      db:
+        condition: service_healthy
+    # Cek apakah PHP-FPM sudah benar-benar mendengarkan di port 9000.
+    # Tanpa ini, container dianggap "siap" hanya karena sudah menyala,
+    # padahal proses PHP-FPM di dalamnya mungkin belum selesai boot —
+    # itulah yang menyebabkan Nginx sempat melayani request sebelum
+    # PHP-FPM siap dan browser menerima ERR_EMPTY_RESPONSE.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/9000' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 15s
 
   # 2. Container Web Server (Nginx)
   webserver:
@@ -33,7 +46,10 @@ services:
     networks:
       - laravel-network
     depends_on:
-      - app
+      app:
+        # Nginx baru dinyalakan (dan baru mulai menerima koneksi di port
+        # 8000) setelah healthcheck 'app' di atas dinyatakan sehat.
+        condition: service_healthy
 
   # 3. Container Database (MySQL)
   db:
@@ -52,6 +68,16 @@ services:
       - dbdata:/var/lib/mysql
     networks:
       - laravel-network
+    # Cek apakah MySQL sudah siap menerima koneksi, bukan cuma "container
+    # sudah menyala". Inisialisasi database pertama kali bisa makan waktu
+    # cukup lama; tanpa healthcheck ini, 'app' bisa mencoba connect ke DB
+    # sebelum MySQL benar-benar siap.
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
 
 networks:
   laravel-network:
